@@ -1,0 +1,128 @@
+---
+title: "Final Project: How Camera Specs Influence Price Over Time"
+author: "Owen Sanders Team: Resolution Revolution"
+date: "5/9/2026"
+output: html_document
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE, warning = FALSE, message = FALSE)
+library(tidyverse)
+library(scales)
+```
+
+1. Introduction / Background
+The digital camera market has had a massive transformation since the late 1990s. For years, a higher resolution (Max Resolution) was known to be the primary indicator of a camera's quality and, by extension, its market value.
+
+The goal of this project is to explore a historical dataset of digital cameras to understand the economic weight of technical specs. Specifically, aim to answer:
+
+Does increasing resolution (megapixels) actually correlate with higher camera prices?
+
+How does increasing resolution (megapixels) correlate with higher camera prices over time?
+
+By analyzing these trends, we can determine if resolution remains a primary price driver or if other factors have shifted the market.
+
+2. Data
+Data Source
+I am utilizing a camera dataset containing specifications for various models released over two decades.
+
+Data Processing
+To ensure an accurate analysis, I performed several cleaning steps:
+
+Renaming: Variables like Release date and Max resolution were renamed for coding consistency.
+
+Feature Engineering: Extracted the Brand name from the Model string to allow for brand-level grouping.
+
+Filtering: Removed entries with missing or zero values for Price, Weight, and Resolution, as these likely represent data entry errors.
+
+```{r}
+url <- "https://raw.githubusercontent.com/prasertcbs/basic-dataset/master/camera_dataset.csv"
+cameras_raw <- read_csv(url)
+
+cameras_clean <- cameras_raw %>%
+  rename(
+    Release_Year = `Release date`,
+    Max_Resolution = `Max resolution`,
+    Weight_g = `Weight (inc. batteries)`
+  ) %>%
+  mutate(Brand = word(Model, 1)) %>%
+  filter(Price > 0, Weight_g > 0, Max_Resolution > 0)
+
+# Preview of the cleaned data
+head(cameras_clean)
+```
+
+3. Methods To investigate The research questions, I employed two primary methods:
+
+Exploratory Data Analysis: I used ggplot2 to visualize the distribution of prices and the raw correlation between resolution and cost.
+
+Statistical Modeling: I utilized a Simple Linear Regression model to quantify the relationship between resolution and price. The model follows the formula:$$Price = \beta_0 + \beta_1(Max\_Resolution) + \epsilon$$
+
+Temporal Analysis: I used color-mapping and trend lines to see if the price-to-resolution relationship shifted as the Release_Year progressed.
+
+4. ResultsDistribution of PricesBefore looking at correlations, I examined how camera prices are distributed across the dataset.
+
+```{r}
+ggplot(cameras_clean, aes(x = Price)) +
+  geom_histogram(bins = 30, fill = "steelblue", color = "white") +
+  scale_x_continuous(labels = dollar_format()) +
+  labs(title = "Distribution of Camera Prices",
+       x = "Price (USD)",
+       y = "Frequency") +
+  theme_minimal()
+```
+
+The histogram shows a long tail distribution. Most cameras are priced in the consumer range (under $1,000), while a few professional-grade models act as outliers with significantly higher price points.
+
+Impact of Resolution on Price
+To answer the first research question, I plotted Max Resolution against Price and applied a linear regression model.
+
+```{r}
+# Statistical Summary
+model_1 <- lm(Price ~ Max_Resolution, data = cameras_clean)
+summary(model_1)
+
+# Visualization
+ggplot(cameras_clean, aes(x = Max_Resolution, y = Price)) +
+  geom_point(alpha = 0.4, color = "purple") +
+  geom_smooth(method = "lm", color = "black") +
+  labs(title = "The Relationship Between Megapixels and Price",
+       x = "Max Resolution",
+       y = "Price ($)") +
+  theme_minimal()
+```
+
+Finding: The regression output shows a positive coefficient for Max_Resolution. This suggests that, generally, as resolution increases, the price tends to rise. However, the scatter in the data suggests that resolution alone does not explain the entirety of price variance.
+
+Trends Over Time
+Finally, I looked at how this relationship evolved over the years.
+
+```{r}
+ggplot(cameras_clean, aes(x = Max_Resolution, y = Price, color = Release_Year)) +
+  geom_point(alpha = 0.7) +
+  geom_smooth(method = "lm", color = "red", se = FALSE) +
+  scale_color_viridis_c() + 
+  labs(title = "Impact of Megapixels on Price Over Time",
+       x = "Max Resolution",
+       y = "Price ($)",
+       color = "Release Year") +
+  theme_minimal()
+```
+
+Finding: By observing the color gradient, you can see that newer cameras (lighter colors) tend to have much higher resolutions but are distributed across all price points. This indicates that while high resolution was once a premium feature reserved for expensive models, it has become a standard feature in more recent, affordable models.
+
+5. Conclusion:
+
+My analysis of the digital camera market reveals that while there is a statistically significant positive correlation between megapixels and price, the relationship is not as rigid as expected.
+
+Key Takeaways:
+
+The Resolution Premium: Early in the dataset, higher resolution was a strong predictor of a high-priced camera.
+
+Market Saturation: In more recent years, high-resolution sensors have started appearing in both budget and professional models alike.
+
+Misconceptions: Our findings suggest that consumers should not use resolution as a sole proxy for quality or value, as other factors play a major role in the final price tag.
+
+Future Work:
+Further research could include "Sensor Size" or "ISO Range" to see if these specs have overtaken resolution as the primary price drivers in the modern era. Additionally, comparing DSLR vs. Mirrorless categories could provide deeper insight into current market shifts.
+
